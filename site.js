@@ -1,4 +1,5 @@
 const storageKey = 'mogid-event-brief';
+const contactEmail = 'mogidprojects@gmail.com';
 
 function readBrief() {
   try {
@@ -80,29 +81,44 @@ document.querySelectorAll('.mini-add').forEach((link) => {
   });
 });
 
-document.querySelector('#download-brief')?.addEventListener('click', () => {
-  const form = document.querySelector('#brief-form');
-  const values = new FormData(form);
-  const services = readBrief();
-  const lines = [
+function getBriefLines() {
+  const data = getBriefData();
+  return [
     'MOGID PROJECTS (PTY) LTD',
     'EVENT BRIEF',
     'Registration No. 2022 / 321696 / 07',
     '',
-    `Event name: ${values.get('eventName') || 'Not specified'}`,
-    `Event type: ${values.get('eventType') || 'Not specified'}`,
-    `Date: ${values.get('eventDate') || 'Not specified'}`,
-    `Location: ${values.get('eventLocation') || 'Not specified'}`,
+    `Event name: ${data.eventName || 'Not specified'}`,
+    `Event type: ${data.eventType || 'Not specified'}`,
+    `Date: ${data.eventDate || 'Not specified'}`,
+    `Location: ${data.eventLocation || 'Not specified'}`,
     '',
     'SERVICES TO DISCUSS',
-    ...(services.length ? services.map((service) => `- ${service}`) : ['- Not selected']),
+    ...(data.services.length ? data.services.map((service) => `- ${service}`) : ['- Not selected']),
     '',
     'ADDITIONAL NOTES',
-    values.get('eventNotes') || 'None provided',
+    data.eventNotes || 'None provided',
     '',
     'This brief is a starting point for discussion. Services are subject to scoping and quotation.',
-    'MOGID Projects (Pty) Ltd | Plot 15, Zaanrivierspoort, Molemole, Limpopo, 0700'
+    'MOGID Projects (Pty) Ltd | Plot 15, Zaanrivierspoort, Molemole, Limpopo, 0700',
+    `Email: ${contactEmail}`
   ];
+}
+
+function getBriefData() {
+  const values = new FormData(document.querySelector('#brief-form'));
+  return {
+    eventName: values.get('eventName'),
+    eventType: values.get('eventType'),
+    eventDate: values.get('eventDate'),
+    eventLocation: values.get('eventLocation'),
+    eventNotes: values.get('eventNotes'),
+    services: readBrief()
+  };
+}
+
+document.querySelector('#download-brief')?.addEventListener('click', () => {
+  const lines = getBriefLines();
   const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const download = document.createElement('a');
@@ -112,6 +128,69 @@ document.querySelector('#download-brief')?.addEventListener('click', () => {
   URL.revokeObjectURL(url);
   document.querySelector('#brief-status').textContent = 'Your event brief has been downloaded.';
 });
+
+const downloadButton = document.querySelector('#download-brief');
+if (downloadButton) {
+  const emailButton = document.createElement('button');
+  emailButton.className = 'button button-gold button-wide';
+  emailButton.type = 'button';
+  emailButton.textContent = 'Email event brief';
+  downloadButton.insertAdjacentElement('afterend', emailButton);
+  emailButton.addEventListener('click', async () => {
+    emailButton.disabled = true;
+    document.querySelector('#brief-status').textContent = 'Sending your event brief...';
+    try {
+      const response = await fetch('/api/brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getBriefData())
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'The brief could not be sent.');
+      document.querySelector('#brief-status').textContent = result.message;
+    } catch (error) {
+      document.querySelector('#brief-status').textContent = error.message || 'The server could not be reached. Please try again.';
+    } finally {
+      emailButton.disabled = false;
+    }
+  });
+
+  const whatsappButton = document.createElement('a');
+  whatsappButton.className = 'button button-outline button-wide';
+  whatsappButton.target = '_blank';
+  whatsappButton.rel = 'noopener noreferrer';
+  whatsappButton.textContent = 'WhatsApp event brief';
+  whatsappButton.hidden = true;
+  whatsappButton.addEventListener('click', () => {
+    const number = whatsappButton.dataset.number;
+    if (number) whatsappButton.href = `https://wa.me/${number}?text=${encodeURIComponent(getBriefLines().join('\n'))}`;
+  });
+  emailButton.insertAdjacentElement('afterend', whatsappButton);
+
+  fetch('/api/config')
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error('Contact settings unavailable')))
+    .then(({ whatsappNumber }) => {
+      if (!whatsappNumber) return;
+      whatsappButton.dataset.number = whatsappNumber;
+      whatsappButton.hidden = false;
+    })
+    .catch(() => {});
+}
+
+fetch('/api/config')
+  .then((response) => response.ok ? response.json() : Promise.reject(new Error('Contact settings unavailable')))
+  .then(({ whatsappNumber }) => {
+    if (!whatsappNumber) return;
+    const footerLinks = document.querySelector('.footer-links');
+    if (!footerLinks) return;
+    const link = document.createElement('a');
+    link.href = `https://wa.me/${whatsappNumber}`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'WhatsApp MOGID';
+    footerLinks.append(link);
+  })
+  .catch(() => {});
 
 document.querySelectorAll('.year').forEach((element) => { element.textContent = new Date().getFullYear(); });
 renderBrief();
