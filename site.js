@@ -193,6 +193,8 @@ fetch('/api/config')
   .catch(() => {});
 
 document.querySelectorAll('.year').forEach((element) => { element.textContent = new Date().getFullYear(); });
+const briefStatus = document.querySelector('#brief-status');
+if (briefStatus) briefStatus.className = 'brief-status';
 renderBrief();
 const selectedService = new URLSearchParams(location.search).get('add');
 if (selectedService && document.querySelector('#brief')) {
