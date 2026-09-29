@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import compression from 'compression';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import path from 'node:path';
@@ -33,16 +34,20 @@ const rateWindowMs = 15 * 60 * 1000;
 const maxSubmissionsPerWindow = 5;
 
 app.disable('x-powered-by');
+app.use(compression());
 app.use((request, response, next) => {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.setHeader('X-Frame-Options', 'DENY');
+  response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://images.unsplash.com data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
   next();
 });
 app.use(express.json({ limit: '20kb', strict: true }));
 
 function getWhatsAppNumber() {
-  const digits = (process.env.WHATSAPP_BUSINESS_NUMBER || '').replace(/\D/g, '');
+  const rawNumber = (process.env.WHATSAPP_BUSINESS_NUMBER || '').replace(/\D/g, '');
+  const digits = /^0\d{9}$/.test(rawNumber) ? `27${rawNumber.slice(1)}` : rawNumber;
   return /^\d{8,15}$/.test(digits) ? digits : '';
 }
 
@@ -52,6 +57,14 @@ function textField(value, limit) {
 
 function takeRateLimit(ip) {
   const now = Date.now();
+  if (!submissionsByIp.has(ip) && submissionsByIp.size >= 10000) {
+    for (const [knownIp, timestamps] of submissionsByIp) {
+      if (!timestamps.some((time) => now - time < rateWindowMs)) {
+        submissionsByIp.delete(knownIp);
+      }
+    }
+    if (submissionsByIp.size >= 10000) return false;
+  }
   const recent = (submissionsByIp.get(ip) || []).filter((time) => now - time < rateWindowMs);
   if (recent.length >= maxSubmissionsPerWindow) {
     submissionsByIp.set(ip, recent);
@@ -75,6 +88,13 @@ app.get('/api/config', (request, response) => {
 });
 
 app.post('/api/brief', async (request, response) => {
+  if (request.get('sec-fetch-site') === 'cross-site') {
+    return response.status(403).json({ error: 'Cross-site brief submissions are not allowed.' });
+  }
+  if (!request.is('application/json')) {
+    return response.status(415).json({ error: 'Brief submissions must use application/json.' });
+  }
+
   const ip = request.socket.remoteAddress || 'unknown';
   if (!takeRateLimit(ip)) {
     return response.status(429).json({ error: 'Too many brief submissions. Please try again later.' });
@@ -142,6 +162,11 @@ app.post('/api/brief', async (request, response) => {
 
 app.get(['/', ...[...allowedFiles].map((file) => `/${file}`)], (request, response) => {
   const file = request.path === '/' ? 'index.html' : path.basename(request.path);
+  if (file === 'styles.css' || file === 'site.js') {
+    response.setHeader('Cache-Control', 'public, max-age=3600');
+  } else if (file.endsWith('.html')) {
+    response.setHeader('Cache-Control', 'no-cache');
+  }
   response.sendFile(path.join(root, file));
 });
 
