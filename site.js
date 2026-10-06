@@ -173,7 +173,7 @@ fetch('/api/config')
     if (!/^\d{8,15}$/.test(internationalNumber)) return;
     const floatingLink = document.createElement('a');
     floatingLink.className = 'whatsapp-float';
-    floatingLink.href = `https://wa.me/${internationalNumber}?text=${encodeURIComponent('Hello MOGID Projects, I need help with an event.')}`;
+    floatingLink.href = `https://wa.me/${internationalNumber}?text=${encodeURIComponent('Hello MOGID Projects, I would like a quote for an event.')}`;
     floatingLink.target = '_blank';
     floatingLink.rel = 'noopener noreferrer';
     floatingLink.setAttribute('aria-label', 'Chat with MOGID Projects on WhatsApp');
