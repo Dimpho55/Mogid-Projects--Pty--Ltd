@@ -1,5 +1,15 @@
 const storageKey = 'mogid-event-brief';
 const contactEmail = 'mogidprojects@gmail.com';
+const fallbackWhatsAppNumber = '2763143487';
+
+function sanitizeWhatsAppNumber(number) {
+  const digits = String(number || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (/^0\d{9}$/.test(digits)) return `27${digits.slice(1)}`;
+  if (/^27\d{9,10}$/.test(digits)) return digits;
+  if (/^\d{9,15}$/.test(digits)) return digits;
+  return '';
+}
 
 function readBrief() {
   try {
@@ -15,8 +25,7 @@ function saveBrief(items) {
 }
 
 function normalizeWhatsAppNumber(number) {
-  const digits = String(number || '').replace(/\D/g, '');
-  return /^0\d{9}$/.test(digits) ? `27${digits.slice(1)}` : digits;
+  return sanitizeWhatsAppNumber(number);
 }
 
 function renderBrief() {
@@ -166,31 +175,34 @@ if (downloadButton) {
 
 }
 
+function attachFloatingWhatsAppButton(number) {
+  const internationalNumber = normalizeWhatsAppNumber(number);
+  if (!/^\d{8,15}$/.test(internationalNumber)) return;
+
+  const floatingLink = document.createElement('a');
+  floatingLink.className = 'whatsapp-float';
+  floatingLink.href = `https://wa.me/${internationalNumber}?text=${encodeURIComponent('Hello MOGID Projects, I would like a quote for an event.')}`;
+  floatingLink.target = '_blank';
+  floatingLink.rel = 'noopener noreferrer';
+  floatingLink.setAttribute('aria-label', 'Chat with MOGID Projects on WhatsApp');
+  floatingLink.title = 'Chat with MOGID Projects on WhatsApp';
+  floatingLink.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 4.2A11.5 11.5 0 0 0 6.1 21.5l-1.5 5.4 5.6-1.5A11.5 11.5 0 1 0 16 4.2Zm-4.7 6.9c.1-.2.2-.3.4-.4.2-.1.4-.1.6-.1h.3c.2 0 .4 0 .6.3.2.2.6.7.6 1.5 0 1-.7 1.3-.9 1.4-.2.1-.4.2-.4.4l-.2.4c-.1.2-.2.1-.4.1s-.8-.3-1.5-.9c-.6-.5-1-.9-1.2-1.1-.2-.2-.2-.3-.1-.5.1-.2.2-.3.4-.4l.3-.2.1-.2c.1-.2 0-.4 0-.5l-.1-.4-.4-.9c-.1-.2-.3-.2-.4-.3h-.3c-.1 0-.3 0-.4.1-.2.2-.6.7-.6 1.7s.7 2.1.8 2.3c.2.3 1.3 2.1 3.3 2.9 1.8.8 1.8.6 2.2.6.6 0 1.8-.7 2.1-1.4.3-.7.3-1.4.2-1.5-.1-.1-.2-.2-.4-.3l-1.7-.8c-.2-.1-.3-.1-.4.1l-.4.5c-.1.2-.3.2-.5.1-.2-.1-.8-.4-1.5-.9-.6-.5-1-1.1-1.1-1.3-.1-.2-.1-.3 0-.4l.3-.4c.1-.1.2-.2.3-.2.1-.1.2-.1.3-.1h.1c.1 0 .2-.1.3-.2l.2-.4c.1-.2.1-.3 0-.5l-.2-.4-.5-1.1Z"/></svg>';
+  document.body.append(floatingLink);
+
+  const footerLinks = document.querySelector('.footer-links');
+  if (!footerLinks) return;
+  const link = document.createElement('a');
+  link.href = `https://wa.me/${internationalNumber}`;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'WhatsApp MOGID';
+  footerLinks.append(link);
+}
+
 fetch('/api/config')
   .then((response) => response.ok ? response.json() : Promise.reject(new Error('Contact settings unavailable')))
-  .then(({ whatsappNumber }) => {
-    const internationalNumber = normalizeWhatsAppNumber(whatsappNumber);
-    if (!/^\d{8,15}$/.test(internationalNumber)) return;
-    const floatingLink = document.createElement('a');
-    floatingLink.className = 'whatsapp-float';
-    floatingLink.href = `https://wa.me/${internationalNumber}?text=${encodeURIComponent('Hello MOGID Projects, I would like a quote for an event.')}`;
-    floatingLink.target = '_blank';
-    floatingLink.rel = 'noopener noreferrer';
-    floatingLink.setAttribute('aria-label', 'Chat with MOGID Projects on WhatsApp');
-    floatingLink.title = 'Chat with MOGID Projects on WhatsApp';
-    floatingLink.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 4.2A11.5 11.5 0 0 0 6.1 21.5l-1.5 5.4 5.6-1.5A11.5 11.5 0 1 0 16 4.2Zm-4.7 6.9c.1-.2.2-.3.4-.4.2-.1.4-.1.6-.1h.3c.2 0 .4 0 .6.3.2.2.6.7.6 1.5 0 1-.7 1.3-.9 1.4-.2.1-.4.2-.4.4l-.2.4c-.1.2-.2.1-.4.1s-.8-.3-1.5-.9c-.6-.5-1-.9-1.2-1.1-.2-.2-.2-.3-.1-.5.1-.2.2-.3.4-.4l.3-.2.1-.2c.1-.2 0-.4 0-.5l-.1-.4-.4-.9c-.1-.2-.3-.2-.4-.3h-.3c-.1 0-.3 0-.4.1-.2.2-.6.7-.6 1.7s.7 2.1.8 2.3c.2.3 1.3 2.1 3.3 2.9 1.8.8 1.8.6 2.2.6.6 0 1.8-.7 2.1-1.4.3-.7.3-1.4.2-1.5-.1-.1-.2-.2-.4-.3l-1.7-.8c-.2-.1-.3-.1-.4.1l-.4.5c-.1.2-.3.2-.5.1-.2-.1-.8-.4-1.5-.9-.6-.5-1-1.1-1.1-1.3-.1-.2-.1-.3 0-.4l.3-.4c.1-.1.2-.2.3-.2.1-.1.2-.1.3-.1h.1c.1 0 .2-.1.3-.2l.2-.4c.1-.2.1-.3 0-.5l-.2-.4-.5-1.1Z"/></svg>';
-    document.body.append(floatingLink);
-
-    const footerLinks = document.querySelector('.footer-links');
-    if (!footerLinks) return;
-    const link = document.createElement('a');
-    link.href = `https://wa.me/${internationalNumber}`;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'WhatsApp MOGID';
-    footerLinks.append(link);
-  })
-  .catch(() => {});
+  .then(({ whatsappNumber }) => attachFloatingWhatsAppButton(whatsappNumber || fallbackWhatsAppNumber))
+  .catch(() => attachFloatingWhatsAppButton(fallbackWhatsAppNumber));
 
 document.querySelectorAll('.year').forEach((element) => { element.textContent = new Date().getFullYear(); });
 const briefStatus = document.querySelector('#brief-status');
