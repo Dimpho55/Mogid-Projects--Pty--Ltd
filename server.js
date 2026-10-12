@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const app = express();
 const root = path.dirname(fileURLToPath(import.meta.url));
+const siteRoot = path.join(root, 'docs');
 const port = Number(process.env.PORT || 3000);
 const contactEmail = process.env.CONTACT_EMAIL || 'mogidprojects@gmail.com';
 const allowedFiles = new Set([
@@ -15,7 +16,9 @@ const allowedFiles = new Set([
   'services.html',
   'shop.html',
   'styles.css',
-  'site.js'
+  'site.js',
+  'SOSCO-EVENTS-LOGO.jpg',
+  'MOGID-PROJECTS-PTY-LTD-LOGO-SMALL.jpg'
 ]);
 const serviceOptions = new Set([
   'Event management & coordination',
@@ -171,7 +174,7 @@ app.get(['/', ...[...allowedFiles].map((file) => `/${file}`)], (request, respons
   } else if (file.endsWith('.html')) {
     response.setHeader('Cache-Control', 'no-cache');
   }
-  response.sendFile(path.join(root, file));
+  response.sendFile(path.join(siteRoot, file));
 });
 
 app.use((error, request, response, next) => {
