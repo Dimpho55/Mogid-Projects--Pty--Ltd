@@ -163,6 +163,14 @@ if (downloadButton) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(getBriefData())
       });
+      if (response.status === 404) {
+        const data = getBriefData();
+        const subject = data.eventName ? `Website event brief - ${data.eventName}` : 'Website event brief';
+        const body = getBriefLines().join('\n');
+        window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        document.querySelector('#brief-status').textContent = 'Your email app will open with the event brief.';
+        return;
+      }
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'The brief could not be sent.');
       document.querySelector('#brief-status').textContent = result.message;

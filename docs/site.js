@@ -1,0 +1,222 @@
+const storageKey = 'mogid-event-brief';
+const contactEmail = 'mogidprojects@gmail.com';
+const fallbackWhatsAppNumber = '2763143487';
+
+function sanitizeWhatsAppNumber(number) {
+  const digits = String(number || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (/^0\d{9}$/.test(digits)) return `27${digits.slice(1)}`;
+  if (/^27\d{9,10}$/.test(digits)) return digits;
+  if (/^\d{9,15}$/.test(digits)) return digits;
+  return '';
+}
+
+function readBrief() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    return Array.isArray(stored) ? stored.filter((item) => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveBrief(items) {
+  localStorage.setItem(storageKey, JSON.stringify(items));
+}
+
+function normalizeWhatsAppNumber(number) {
+  return sanitizeWhatsAppNumber(number);
+}
+
+function renderBrief() {
+  const items = readBrief();
+  document.querySelectorAll('.quote-count').forEach((count) => { count.textContent = items.length; });
+  const list = document.querySelector('#brief-list');
+  const empty = document.querySelector('#brief-empty');
+  if (list) {
+    list.replaceChildren();
+    items.forEach((name) => {
+      const row = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = name;
+      const remove = document.createElement('button');
+      remove.className = 'remove-service';
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `Remove ${name}`);
+      remove.textContent = '×';
+      remove.addEventListener('click', () => {
+        saveBrief(readBrief().filter((item) => item !== name));
+        renderBrief();
+      });
+      row.append(label, remove);
+      list.append(row);
+    });
+  }
+  if (empty) empty.hidden = items.length > 0;
+  const clear = document.querySelector('#clear-brief');
+  if (clear) clear.hidden = items.length === 0;
+  document.querySelectorAll('.add-service').forEach((button) => {
+    const added = items.includes(button.dataset.service);
+    button.classList.toggle('is-added', added);
+    button.querySelector('span:first-child').textContent = added ? 'Added to brief' : 'Add to brief';
+    button.querySelector('span:last-child').textContent = added ? '✓' : '＋';
+    button.setAttribute('aria-pressed', String(added));
+  });
+}
+
+document.querySelector('.menu-toggle')?.addEventListener('click', (event) => {
+  const button = event.currentTarget;
+  const nav = document.querySelector('.main-nav');
+  const expanded = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', String(!expanded));
+  button.setAttribute('aria-label', expanded ? 'Open navigation' : 'Close navigation');
+  nav.classList.toggle('is-open', !expanded);
+});
+
+document.querySelectorAll('.page-hero-image img').forEach((image) => {
+  image.addEventListener('error', () => { image.hidden = true; });
+});
+
+document.querySelectorAll('.add-service').forEach((button) => {
+  button.addEventListener('click', () => {
+    const items = readBrief();
+    const service = button.dataset.service;
+    saveBrief(items.includes(service) ? items.filter((item) => item !== service) : [...items, service]);
+    renderBrief();
+  });
+});
+
+document.querySelector('#clear-brief')?.addEventListener('click', () => {
+  saveBrief([]);
+  renderBrief();
+});
+
+document.querySelectorAll('.mini-add').forEach((link) => {
+  link.addEventListener('click', () => {
+    const service = new URL(link.href).searchParams.get('add');
+    const items = readBrief();
+    if (service && !items.includes(service)) saveBrief([...items, service]);
+  });
+});
+
+function getBriefLines() {
+  const data = getBriefData();
+  return [
+    'MOGID PROJECTS (PTY) LTD',
+    'EVENT BRIEF',
+    'Registration No. 2022 / 321696 / 07',
+    '',
+    `Event name: ${data.eventName || 'Not specified'}`,
+    `Event type: ${data.eventType || 'Not specified'}`,
+    `Date: ${data.eventDate || 'Not specified'}`,
+    `Location: ${data.eventLocation || 'Not specified'}`,
+    '',
+    'SERVICES TO DISCUSS',
+    ...(data.services.length ? data.services.map((service) => `- ${service}`) : ['- Not selected']),
+    '',
+    'ADDITIONAL NOTES',
+    data.eventNotes || 'None provided',
+    '',
+    'This brief is a starting point for discussion. Services are subject to scoping and quotation.',
+    'MOGID Projects (Pty) Ltd | Plot 15, Zaanrivierspoort, Molemole, Limpopo, 0700',
+    `Email: ${contactEmail}`
+  ];
+}
+
+function getBriefData() {
+  const values = new FormData(document.querySelector('#brief-form'));
+  return {
+    eventName: values.get('eventName'),
+    eventType: values.get('eventType'),
+    eventDate: values.get('eventDate'),
+    eventLocation: values.get('eventLocation'),
+    eventNotes: values.get('eventNotes'),
+    services: readBrief()
+  };
+}
+
+document.querySelector('#download-brief')?.addEventListener('click', () => {
+  const lines = getBriefLines();
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const download = document.createElement('a');
+  download.href = url;
+  download.download = 'mogid-event-brief.txt';
+  download.click();
+  URL.revokeObjectURL(url);
+  document.querySelector('#brief-status').textContent = 'Your event brief has been downloaded.';
+});
+
+const downloadButton = document.querySelector('#download-brief');
+if (downloadButton) {
+  const emailButton = document.createElement('button');
+  emailButton.className = 'button button-gold button-wide';
+  emailButton.type = 'button';
+  emailButton.textContent = 'Email event brief';
+  downloadButton.insertAdjacentElement('afterend', emailButton);
+  emailButton.addEventListener('click', async () => {
+    emailButton.disabled = true;
+    document.querySelector('#brief-status').textContent = 'Sending your event brief...';
+    try {
+      const response = await fetch('/api/brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getBriefData())
+      });
+      if (response.status === 404) {
+        const data = getBriefData();
+        const subject = data.eventName ? `Website event brief - ${data.eventName}` : 'Website event brief';
+        const body = getBriefLines().join('\n');
+        window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        document.querySelector('#brief-status').textContent = 'Your email app will open with the event brief.';
+        return;
+      }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'The brief could not be sent.');
+      document.querySelector('#brief-status').textContent = result.message;
+    } catch (error) {
+      document.querySelector('#brief-status').textContent = error.message || 'The server could not be reached. Please try again.';
+    } finally {
+      emailButton.disabled = false;
+    }
+  });
+
+}
+
+function attachFloatingWhatsAppButton(number) {
+  const internationalNumber = normalizeWhatsAppNumber(number);
+  if (!/^\d{8,15}$/.test(internationalNumber)) return;
+
+  const floatingLink = document.createElement('a');
+  floatingLink.className = 'whatsapp-float';
+  floatingLink.href = `https://wa.me/${internationalNumber}?text=${encodeURIComponent('Hello MOGID Projects, I would like a quote for an event.')}`;
+  floatingLink.target = '_blank';
+  floatingLink.rel = 'noopener noreferrer';
+  floatingLink.setAttribute('aria-label', 'Chat with MOGID Projects on WhatsApp');
+  floatingLink.title = 'Chat with MOGID Projects on WhatsApp';
+  floatingLink.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 4.2A11.5 11.5 0 0 0 6.1 21.5l-1.5 5.4 5.6-1.5A11.5 11.5 0 1 0 16 4.2Zm-4.7 6.9c.1-.2.2-.3.4-.4.2-.1.4-.1.6-.1h.3c.2 0 .4 0 .6.3.2.2.6.7.6 1.5 0 1-.7 1.3-.9 1.4-.2.1-.4.2-.4.4l-.2.4c-.1.2-.2.1-.4.1s-.8-.3-1.5-.9c-.6-.5-1-.9-1.2-1.1-.2-.2-.2-.3-.1-.5.1-.2.2-.3.4-.4l.3-.2.1-.2c.1-.2 0-.4 0-.5l-.1-.4-.4-.9c-.1-.2-.3-.2-.4-.3h-.3c-.1 0-.3 0-.4.1-.2.2-.6.7-.6 1.7s.7 2.1.8 2.3c.2.3 1.3 2.1 3.3 2.9 1.8.8 1.8.6 2.2.6.6 0 1.8-.7 2.1-1.4.3-.7.3-1.4.2-1.5-.1-.1-.2-.2-.4-.3l-1.7-.8c-.2-.1-.3-.1-.4.1l-.4.5c-.1.2-.3.2-.5.1-.2-.1-.8-.4-1.5-.9-.6-.5-1-1.1-1.1-1.3-.1-.2-.1-.3 0-.4l.3-.4c.1-.1.2-.2.3-.2.1-.1.2-.1.3-.1h.1c.1 0 .2-.1.3-.2l.2-.4c.1-.2.1-.3 0-.5l-.2-.4-.5-1.1Z"/></svg>';
+  document.body.append(floatingLink);
+
+  const footerLinks = document.querySelector('.footer-links');
+  if (!footerLinks) return;
+  const link = document.createElement('a');
+  link.href = `https://wa.me/${internationalNumber}`;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'WhatsApp MOGID';
+  footerLinks.append(link);
+}
+
+fetch('/api/config')
+  .then((response) => response.ok ? response.json() : Promise.reject(new Error('Contact settings unavailable')))
+  .then(({ whatsappNumber }) => attachFloatingWhatsAppButton(whatsappNumber || fallbackWhatsAppNumber))
+  .catch(() => attachFloatingWhatsAppButton(fallbackWhatsAppNumber));
+
+document.querySelectorAll('.year').forEach((element) => { element.textContent = new Date().getFullYear(); });
+const briefStatus = document.querySelector('#brief-status');
+if (briefStatus) briefStatus.className = 'brief-status';
+renderBrief();
+const selectedService = new URLSearchParams(location.search).get('add');
+if (selectedService && document.querySelector('#brief')) {
+  document.querySelector('#brief').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}

@@ -26,6 +26,10 @@ const serviceOptions = new Set([
   'Technical production',
   'Infrastructure & furniture',
   'Decor & guest experience',
+  'Draping & event styling',
+  'Premium tables & chairs',
+  'Centrepieces & style details',
+  'Stages & stanchions',
   'Safety & compliance coordination',
   'Live operations & close-out'
 ]);
