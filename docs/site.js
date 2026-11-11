@@ -1,6 +1,6 @@
 const storageKey = 'mogid-event-brief';
 const contactEmail = 'mogidprojects@gmail.com';
-const fallbackWhatsAppNumber = '27763143487';
+const fallbackWhatsAppNumber = '27674082993';
 
 function sanitizeWhatsAppNumber(number) {
   const digits = String(number || '').replace(/\D/g, '');
