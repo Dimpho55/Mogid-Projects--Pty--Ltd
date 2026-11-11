@@ -15,6 +15,7 @@ const allowedFiles = new Set([
   'company.html',
   'services.html',
   'shop.html',
+  'gallery.html',
   'styles.css',
   'site.js',
   'SOSCO-EVENTS-LOGO.jpg',
@@ -34,7 +35,16 @@ const serviceOptions = new Set([
   'Centrepieces & style details',
   'Stages & stanchions',
   'Safety & compliance coordination',
-  'Live operations & close-out'
+  'Live operations & close-out',
+  'White Pagoda Tent',
+  '15m x 50m L-Shape Frame Tent',
+  '15m x 50m Frame Tent',
+  '15m x 45m Frame Tent',
+  '10-Seater White Lounge Set',
+  '10-Seater Gold Lounge Set',
+  '10-Seater Blue Lounge Set',
+  'Funeral Set-up',
+  'L-Shape Funeral Set-up'
 ]);
 const submissionsByIp = new Map();
 const rateWindowMs = 15 * 60 * 1000;
@@ -51,6 +61,11 @@ app.use((request, response, next) => {
   next();
 });
 app.use(express.json({ limit: '20kb', strict: true }));
+app.use('/photos', express.static(path.join(siteRoot, 'photos'), {
+  dotfiles: 'deny',
+  index: false,
+  maxAge: '1h'
+}));
 
 function getWhatsAppNumber() {
   const rawNumber = (process.env.WHATSAPP_BUSINESS_NUMBER || '').replace(/\D/g, '');
@@ -133,7 +148,7 @@ app.post('/api/brief', async (request, response) => {
     `Date: ${eventDate || 'Not specified'}`,
     `Location: ${eventLocation || 'Not specified'}`,
     '',
-    'SERVICES TO DISCUSS',
+    'SERVICES AND ITEMS TO DISCUSS',
     ...(services.length ? services.map((service) => `- ${service}`) : ['- Not selected']),
     '',
     'ADDITIONAL NOTES',

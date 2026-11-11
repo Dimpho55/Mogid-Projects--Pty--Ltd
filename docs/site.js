@@ -111,7 +111,7 @@ function getBriefLines() {
     `Date: ${data.eventDate || 'Not specified'}`,
     `Location: ${data.eventLocation || 'Not specified'}`,
     '',
-    'SERVICES TO DISCUSS',
+    'SERVICES AND ITEMS TO DISCUSS',
     ...(data.services.length ? data.services.map((service) => `- ${service}`) : ['- Not selected']),
     '',
     'ADDITIONAL NOTES',
