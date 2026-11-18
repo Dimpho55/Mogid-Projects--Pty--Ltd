@@ -1,6 +1,6 @@
 const storageKey = 'mogid-event-brief';
 const contactEmail = 'mogidprojects@gmail.com';
-const fallbackWhatsAppNumber = '27674082993';
+const fallbackWhatsAppNumber = '27763143487';
 
 function sanitizeWhatsAppNumber(number) {
   const digits = String(number || '').replace(/\D/g, '');
@@ -192,8 +192,8 @@ function attachFloatingWhatsAppButton(number) {
   floatingLink.href = `https://wa.me/${internationalNumber}?text=${encodeURIComponent('Hello MOGID Projects, I would like a quote for an event.')}`;
   floatingLink.target = '_blank';
   floatingLink.rel = 'noopener noreferrer';
-  floatingLink.setAttribute('aria-label', 'Chat with MOGID Projects on WhatsApp');
-  floatingLink.title = 'Chat with MOGID Projects on WhatsApp';
+  floatingLink.setAttribute('aria-label', 'Chat with MOGID Projects on WhatsApp Business');
+  floatingLink.title = 'Chat with MOGID Projects on WhatsApp Business';
   floatingLink.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.066 7.926c0 1.399.366 2.764 1.063 3.965L0 16l4.204-1.102a7.93 7.93 0 0 0 3.79.965h.004c4.367 0 7.926-3.558 7.928-7.926a7.9 7.9 0 0 0-2.325-5.611M7.998 14.53a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.25a6.6 6.6 0 0 1-1.007-3.51c.002-3.856 3.14-6.994 7-6.994a6.95 6.95 0 0 1 4.95 2.05 6.95 6.95 0 0 1 2.047 4.953c-.002 3.856-3.14 6.994-7 6.994"/><path fill="currentColor" d="M11.6 8.879c-.198-.099-1.17-.578-1.352-.644-.182-.066-.314-.099-.446.1-.132.198-.512.644-.628.776-.116.132-.231.149-.429.05-.198-.1-.836-.308-1.592-.982-.588-.524-.985-1.17-1.1-1.368-.116-.198-.013-.305.087-.404.09-.09.198-.231.297-.347.099-.116.132-.198.198-.33.066-.132.033-.248-.017-.347-.05-.1-.446-1.075-.611-1.472-.161-.387-.324-.334-.446-.34-.116-.006-.248-.007-.38-.007a.73.73 0 0 0-.528.248c-.182.198-.694.677-.694 1.652s.71 1.916.809 2.048c.099.132 1.398 2.134 3.388 2.991.473.204.842.326 1.13.418.475.151.907.13 1.249.079.381-.057 1.17-.479 1.335-.941.165-.462.165-.859.116-.941-.05-.083-.182-.132-.38-.231"/></svg>';
   document.body.append(floatingLink);
 
@@ -203,7 +203,7 @@ function attachFloatingWhatsAppButton(number) {
   link.href = `https://wa.me/${internationalNumber}`;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
-  link.textContent = 'WhatsApp MOGID';
+  link.textContent = 'WhatsApp Business';
   footerLinks.append(link);
 }
 
